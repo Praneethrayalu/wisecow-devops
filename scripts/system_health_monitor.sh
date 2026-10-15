@@ -16,7 +16,7 @@ while getopts "c:m:d:p:i:l:P:h" o; do
   esac
 done
 
-RED=$'\e[31m'; GRN=$'\e[32m'; YEL=$'\e[33m'; NC=$'\e[0m'
+RED=$'\e[31m'; GRN=$'\e[32m'; NC=$'\e[0m'
 ts() { date '+%Y-%m-%d %H:%M:%S'; }
 log() { echo "[$(ts)] $*" | tee -a "$LOG"; }
 alert() { echo "${RED}[$(ts)] ALERT $*${NC}"; echo "[$(ts)] ALERT $*" >> "$LOG"; }

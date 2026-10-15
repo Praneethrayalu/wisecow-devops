@@ -55,7 +55,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Image metadata (tags: sha, latest)
+      - name: "Image metadata (tags: sha, latest)"
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -106,7 +106,7 @@ jobs:
 
       - name: Deploy the freshly built image
         run: |
-          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ needs.build-and-push.outputs.digest }}"
+          IMAGE="$(echo '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}' | tr '[:upper:]' '[:lower:]')@${{ needs.build-and-push.outputs.digest }}"
           kubectl apply -f k8s/namespace.yaml
           kubectl apply -f k8s/service.yaml -f k8s/ingress.yaml
           kubectl apply -f k8s/deployment.yaml
