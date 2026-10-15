@@ -1,8 +1,8 @@
 # captured 2026-10-15 11:06 UTC on the test machine (Debian 12, Docker, kind v1.32 cluster)
 $ python -m pytest -v tests/test_scripts.py   (fresh venv, pytest 8.3.3)
 ============================= test session starts ==============================
-platform linux -- Python 3.11.6, pytest-8.3.3, pluggy-1.7.0 -- /home/user/tab/tasks/fd13f4a8-4276-41b2-b822-aad1fc23d632/work/venv-qa/bin/python
-rootdir: /home/user/tab/files/accuknox/devops/repo
+platform linux -- Python 3.11.6, pytest-8.3.3, pluggy-1.7.0 -- python
+rootdir: .
 plugins: timeout-2.3.1
 collecting ... collected 40 items
 
