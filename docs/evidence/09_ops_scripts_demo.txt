@@ -1,0 +1,56 @@
+# captured 2026-10-15 11:08 UTC on the test machine (Debian 12, Docker, kind v1.32 cluster)
+$ app_health_checker.py / system_health_monitor.sh / log_analyzer.py - success and failure cases (each command echoed with set -x)
++ python3 scripts/app_health_checker.py https://wisecow.local:8443/ http://127.0.0.1:14500/ --cacert /tmp/wisecow-ca.crt
+2026-10-15 11:08:54,321 INFO UP   https://wisecow.local:8443/  HTTP 200  31.2 ms
+2026-10-15 11:08:54,344 INFO UP   http://127.0.0.1:14500/  HTTP 200  22.6 ms
++ python3 scripts/app_health_checker.py http://127.0.0.1:1/ --retries 2 --backoff 0.5 --json
+{"url": "http://127.0.0.1:1/", "checked_at": "2026-10-15T11:08:54+00:00", "status_code": null, "latency_ms": null, "state": "DOWN", "reason": "connection error: [Errno 111] Connection refused", "attempts": 2}
++ echo exit=1
+exit=1
++ python3 scripts/app_health_checker.py http://127.0.0.1:14500/ --retries 0
+usage: app_health_checker.py [-h] [--expect EXPECT] [--timeout TIMEOUT]
+                             [--retries RETRIES] [--backoff BACKOFF]
+                             [--interval INTERVAL] [--log LOG] [--json]
+                             [--cacert CACERT | --insecure] [-v]
+                             urls [urls ...]
+app_health_checker.py: error: argument --retries: must be between 1 and 20: '0'
++ echo exit=2
+exit=2
++ bash scripts/system_health_monitor.sh -l /tmp/shm-demo.log
+[2026-10-15 11:08:56] cpu=6% mem=37% disk(/)=61% procs=239 zombies=0 load=0.72 0.72 0.53
+[2026-10-15 11:08:56] OK - all metrics within thresholds
++ echo exit=0
+exit=0
++ bash scripts/system_health_monitor.sh -j -p 1 -l /tmp/shm-demo.log
+{"timestamp":"2026-10-15T11:08:57Z","cpu_pct":4,"mem_pct":37,"disk_pct":61,"disk_path":"/","processes":240,"zombies":0,"load":"0.66 0.71 0.52","thresholds":{"cpu":80,"mem":80,"disk":85,"processes":1},"status":"ALERT","alerts":["processes"]}
++ echo exit=1
+exit=1
++ bash scripts/system_health_monitor.sh -c 150
+system_health_monitor: cpu threshold must be an integer 1-100, got '150'
++ echo exit=2
+exit=2
++ python3 scripts/log_analyzer.py docs/sample_access.log --top 3
++ head -16
+============================================================
+WEB SERVER LOG REPORT
+============================================================
+Files          : docs/sample_access.log
+Total requests : 1200   (unparsed lines: 0)
+Bytes served   : 1,516,852
+404 errors     : 181
+
+Status codes:
+  200: 974
+  404: 181
+  500: 45
+
+Methods: GET=1200
+
+Top 3 requested pages:
++ echo exit=0
+exit=0
++ python3 scripts/log_analyzer.py /nonexistent.log
+log_analyzer: cannot read /nonexistent.log: No such file or directory
++ echo exit=2
+exit=2
+# exit code: 0

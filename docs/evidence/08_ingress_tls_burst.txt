@@ -1,0 +1,13 @@
+# captured 2026-10-15 11:06 UTC on the test machine (Debian 12, Docker, kind v1.32 cluster)
+$ kubectl port-forward svc/ingress-nginx-controller 8443:443 8080:80 (running); curl checks; 100-request burst
+--- verified HTTPS (CA + hostname) ---
+2 200 tls_verify=0
+--- public trust store (should FAIL: self-signed is not publicly trusted) ---
+curl exit 60 (60 = certificate not trusted)
+--- HTTP -> HTTPS ---
+308 -> https://wisecow.local/
+--- TLS 1.1 handshake (should be refused) ---
+curl exit 35
+--- 100 requests, 25 in parallel, through the ingress to 2 replicas ---
+    100 200
+# exit code: 0

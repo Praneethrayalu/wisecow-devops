@@ -1,0 +1,13 @@
+# captured 2026-10-15 11:06 UTC on the test machine (Debian 12, Docker, kind v1.32 cluster)
+$ tests/smoke_test.sh http://127.0.0.1:18081   # ORIGINAL image (nc loop), for comparison - expected to FAIL
+PASS  GET / -> 200
+FAIL  missing Content-Type text/html
+PASS  body has <pre> and the cow
+FAIL  HEAD / not 200
+FAIL  POST / not 405
+FAIL  unknown path not 404
+FAIL  10 of 20 back-to-back requests failed
+FAIL  only 5 of 30 concurrent requests got 200
+----
+smoke test: 6 check(s) failed against http://127.0.0.1:18081
+# exit code: 1

@@ -1,0 +1,8 @@
+# captured 2026-10-15 11:05 UTC on the test machine (Debian 12, Docker, kind v1.32 cluster)
+$ docker build -t ghcr.io/praneethrayalu/wisecow:final .
+ ---> Using cache
+ ---> 6241cc230a90
+Successfully built 6241cc230a90
+Successfully tagged ghcr.io/praneethrayalu/wisecow:final
+image size: 142MB
+# exit code: 0

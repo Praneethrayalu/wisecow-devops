@@ -1,0 +1,35 @@
+# captured 2026-10-15 11:06 UTC on the test machine (Debian 12, Docker, kind v1.32 cluster)
+$ kind load docker-image; kubectl apply -k k8s; kubectl set image ...; kubectl rollout status; kubectl get deploy,pods,svc,ingress,certificate
+Image with ID: sha256:6241cc230a90b70b86bcb13a2bf19822ddb10b680b34bb4b2aace490980c6da4 already present on the node wisecow-control-plane but is missing the tag ghcr.io/praneethrayalu/wisecow:final. re-tagging...
+namespace/wisecow configured
+service/wisecow unchanged
+deployment.apps/wisecow configured
+ingress.networking.k8s.io/wisecow unchanged
+deployment.apps/wisecow image updated
+Waiting for deployment "wisecow" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "wisecow" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "wisecow" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "wisecow" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "wisecow" rollout to finish: 1 old replicas are pending termination...
+deployment "wisecow" successfully rolled out
+NAME                      READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS   IMAGES                                 SELECTOR
+deployment.apps/wisecow   2/2     2            2           78m   wisecow      ghcr.io/praneethrayalu/wisecow:final   app=wisecow
+
+NAME                           READY   STATUS        RESTARTS   AGE     IP            NODE                    NOMINATED NODE   READINESS GATES
+pod/wisecow-54f49b58b5-w5rss   1/1     Running       0          7s      10.244.0.23   wisecow-control-plane   <none>           <none>
+pod/wisecow-54f49b58b5-whg52   1/1     Running       0          3s      10.244.0.24   wisecow-control-plane   <none>           <none>
+pod/wisecow-7c7fcdf6fd-j799c   1/1     Terminating   0          6m14s   10.244.0.21   wisecow-control-plane   <none>           <none>
+
+NAME              TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE   SELECTOR
+service/wisecow   ClusterIP   10.96.176.142   <none>        80/TCP    78m   app=wisecow
+
+NAME                                CLASS   HOSTS           ADDRESS     PORTS     AGE
+ingress.networking.k8s.io/wisecow   nginx   wisecow.local   localhost   80, 443   74m
+
+NAME                                      READY   SECRET        ISSUER               STATUS                                          AGE
+certificate.cert-manager.io/wisecow-tls   True    wisecow-tls   wisecow-selfsigned   Certificate is up to date and has not expired   75m
+
+4         <none>
+5         <none>
+6         <none>
+# exit code: 0

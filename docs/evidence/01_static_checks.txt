@@ -1,0 +1,10 @@
+# captured 2026-10-15 11:05 UTC on the test machine (Debian 12, Docker, kind v1.32 cluster)
+$ shellcheck; py_compile; hadolint; actionlint; bandit; kubeconform (app via kustomize, TLS, optional, KubeArmor)
+shellcheck: no findings
+py_compile: OK
+hadolint: no findings (DL3008 ignored by .hadolint.yaml, reason documented)
+actionlint: no findings
+bandit: no findings (skipped: assert-in-tests, subprocess-import/usage in tests)
+Summary: 4 resources found parsing stdin - Valid: 4, Invalid: 0, Errors: 0, Skipped: 0
+Summary: 6 resources found in 5 files - Valid: 6, Invalid: 0, Errors: 0, Skipped: 0
+# exit code: 0

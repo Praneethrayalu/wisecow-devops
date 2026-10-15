@@ -1,0 +1,14 @@
+# captured 2026-10-15 11:05 UTC on the test machine (Debian 12, Docker, kind v1.32 cluster)
+$ docker run -d --read-only --cap-drop ALL --security-opt no-new-privileges -p 14500:4499 wisecow:final; (wait for healthy); tests/smoke_test.sh http://127.0.0.1:14500
+container health: healthy, user: 10001, read-only rootfs: true
+PASS  GET / -> 200
+PASS  Content-Type text/html
+PASS  body has <pre> and the cow
+PASS  HEAD / -> 200
+PASS  POST / -> 405
+PASS  GET /no-such-page -> 404
+PASS  20 back-to-back requests -> 20 x 200
+PASS  30 concurrent requests -> 30 x 200
+----
+smoke test: all checks passed against http://127.0.0.1:14500
+# exit code: 0

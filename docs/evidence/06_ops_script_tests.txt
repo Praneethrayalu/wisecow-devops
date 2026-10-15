@@ -1,0 +1,51 @@
+# captured 2026-10-15 11:06 UTC on the test machine (Debian 12, Docker, kind v1.32 cluster)
+$ python -m pytest -v tests/test_scripts.py   (fresh venv, pytest 8.3.3)
+============================= test session starts ==============================
+platform linux -- Python 3.11.6, pytest-8.3.3, pluggy-1.7.0 -- /home/user/tab/tasks/fd13f4a8-4276-41b2-b822-aad1fc23d632/work/venv-qa/bin/python
+rootdir: /home/user/tab/files/accuknox/devops/repo
+plugins: timeout-2.3.1
+collecting ... collected 40 items
+
+tests/test_scripts.py::test_health_up PASSED                             [  2%]
+tests/test_scripts.py::test_health_http_error_is_down[/missing-404] PASSED [  5%]
+tests/test_scripts.py::test_health_http_error_is_down[/boom-500] PASSED  [  7%]
+tests/test_scripts.py::test_health_custom_expected_status PASSED         [ 10%]
+tests/test_scripts.py::test_health_connection_refused_is_down PASSED     [ 12%]
+tests/test_scripts.py::test_health_timeout_is_down PASSED                [ 15%]
+tests/test_scripts.py::test_health_retries_then_gives_up_without_trailing_sleep PASSED [ 17%]
+tests/test_scripts.py::test_health_cli_json_stdout_is_pure_json PASSED   [ 20%]
+tests/test_scripts.py::test_health_cli_exit_zero_when_all_up PASSED      [ 22%]
+tests/test_scripts.py::test_health_cli_rejects_bad_arguments[args0] PASSED [ 25%]
+tests/test_scripts.py::test_health_cli_rejects_bad_arguments[args1] PASSED [ 27%]
+tests/test_scripts.py::test_health_cli_rejects_bad_arguments[args2] PASSED [ 30%]
+tests/test_scripts.py::test_health_cli_rejects_bad_arguments[args3] PASSED [ 32%]
+tests/test_scripts.py::test_health_cli_rejects_bad_arguments[args4] PASSED [ 35%]
+tests/test_scripts.py::test_health_cli_rejects_bad_arguments[args5] PASSED [ 37%]
+tests/test_scripts.py::test_health_cli_rejects_bad_arguments[args6] PASSED [ 40%]
+tests/test_scripts.py::test_health_cli_rejects_bad_urls[localhost:8080] PASSED [ 42%]
+tests/test_scripts.py::test_health_cli_rejects_bad_urls[ftp://example.com] PASSED [ 45%]
+tests/test_scripts.py::test_health_cli_rejects_bad_urls[http://] PASSED  [ 47%]
+tests/test_scripts.py::test_log_counts PASSED                            [ 50%]
+tests/test_scripts.py::test_log_malformed_lines_are_counted_not_dropped PASSED [ 52%]
+tests/test_scripts.py::test_log_gzip_and_multiple_files PASSED           [ 55%]
+tests/test_scripts.py::test_log_cli_json_is_valid PASSED                 [ 57%]
+tests/test_scripts.py::test_log_cli_text_report PASSED                   [ 60%]
+tests/test_scripts.py::test_log_cli_all_malformed_exits_1 PASSED         [ 62%]
+tests/test_scripts.py::test_log_cli_missing_file_exits_2 PASSED          [ 65%]
+tests/test_scripts.py::test_log_cli_unreadable_file_exits_2 PASSED       [ 67%]
+tests/test_scripts.py::test_log_cli_corrupt_gzip_exits_2 PASSED          [ 70%]
+tests/test_scripts.py::test_log_cli_rejects_bad_top PASSED               [ 72%]
+tests/test_scripts.py::test_monitor_json_mode_healthy PASSED             [ 75%]
+tests/test_scripts.py::test_monitor_alert_exit_1 PASSED                  [ 77%]
+tests/test_scripts.py::test_monitor_rejects_bad_arguments[args0] PASSED  [ 80%]
+tests/test_scripts.py::test_monitor_rejects_bad_arguments[args1] PASSED  [ 82%]
+tests/test_scripts.py::test_monitor_rejects_bad_arguments[args2] PASSED  [ 85%]
+tests/test_scripts.py::test_monitor_rejects_bad_arguments[args3] PASSED  [ 87%]
+tests/test_scripts.py::test_monitor_rejects_bad_arguments[args4] PASSED  [ 90%]
+tests/test_scripts.py::test_monitor_rejects_bad_arguments[args5] PASSED  [ 92%]
+tests/test_scripts.py::test_monitor_rejects_bad_arguments[args6] PASSED  [ 95%]
+tests/test_scripts.py::test_monitor_rejects_bad_arguments[args7] PASSED  [ 97%]
+tests/test_scripts.py::test_monitor_rejects_bad_arguments[args8] PASSED  [100%]
+
+============================= 40 passed in 10.24s ==============================
+# exit code: 0

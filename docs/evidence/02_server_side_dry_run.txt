@@ -1,0 +1,12 @@
+# captured 2026-10-15 11:05 UTC on the test machine (Debian 12, Docker, kind v1.32 cluster)
+$ kubectl apply --dry-run=server -k k8s; kubectl apply --dry-run=server -f k8s/tls/cert-manager.yaml -f k8s/optional/ -f kubearmor/
+namespace/wisecow configured (server dry run)
+service/wisecow unchanged (server dry run)
+deployment.apps/wisecow configured (server dry run)
+ingress.networking.k8s.io/wisecow unchanged (server dry run)
+clusterissuer.cert-manager.io/wisecow-selfsigned unchanged (server dry run)
+certificate.cert-manager.io/wisecow-tls unchanged (server dry run)
+service/wisecow-nodeport created (server dry run)
+namespace/wisecow unchanged (server dry run)
+kubearmorpolicy.security.kubearmor.com/wisecow-zero-trust unchanged (server dry run)
+# exit code: 0

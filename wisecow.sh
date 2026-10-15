@@ -41,7 +41,8 @@ send_response() {
 
 html_escape() {
 	local s=$1
-	s=${s//&/&amp;}; s=${s//</&lt;}; s=${s//>/&gt;}
+	# replacements are quoted: in bash 5.2 an unquoted "&" in the replacement means "the match"
+	s=${s//&/"&amp;"}; s=${s//</"&lt;"}; s=${s//>/"&gt;"}
 	printf '%s' "$s"
 }
 
