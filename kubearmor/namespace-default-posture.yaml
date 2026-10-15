@@ -1,0 +1,9 @@
+# Turn the Allow-list above into a true default-deny: everything the policy doesn't allow is blocked.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: wisecow
+  annotations:
+    kubearmor-file-posture: block
+    kubearmor-network-posture: block
+    kubearmor-capabilities-posture: block

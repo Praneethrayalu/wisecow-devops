@@ -1,0 +1,121 @@
+name: CI/CD - build, push and deploy wisecow
+
+on:
+  push:
+    branches: [ main ]
+    paths-ignore: [ "docs/**", "**.md" ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/wisecow
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  lint-and-test:
+    name: Lint and smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: ShellCheck the app and scripts
+        uses: ludeeus/action-shellcheck@2.0.0
+        with:
+          scandir: "."
+          severity: warning
+      - name: Validate Kubernetes manifests
+        run: |
+          curl -sSL https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz | tar xz
+          ./kubeconform -strict -ignore-missing-schemas -summary k8s/*.yaml
+      - name: Python syntax check for scripts
+        run: python3 -m py_compile scripts/*.py
+
+  build-and-push:
+    name: Build and push image
+    needs: lint-and-test
+    runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.meta.outputs.tags }}
+      digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Image metadata (tags: sha, latest)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=sha-,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build (and push on main)
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke test the built image
+        if: github.event_name == 'pull_request'
+        run: |
+          docker build -t wisecow:test .
+          docker run -d --name wisecow -p 4499:4499 wisecow:test
+          sleep 3
+          curl -sf http://localhost:4499 | grep -q '<pre>' && echo "wisecow answered with a cow"
+          docker rm -f wisecow
+
+  deploy:
+    name: Continuous deployment to Kubernetes
+    needs: build-and-push
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Configure kubeconfig from secret
+        # KUBE_CONFIG = base64 of a kubeconfig for a service account limited to the wisecow namespace
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+          kubectl cluster-info
+
+      - name: Deploy the freshly built image
+        run: |
+          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ needs.build-and-push.outputs.digest }}"
+          kubectl apply -f k8s/namespace.yaml
+          kubectl apply -f k8s/service.yaml -f k8s/ingress.yaml
+          kubectl apply -f k8s/deployment.yaml
+          kubectl -n wisecow set image deployment/wisecow wisecow="$IMAGE"
+          kubectl -n wisecow rollout status deployment/wisecow --timeout=180s
+
+      - name: Post-deploy health check
+        run: |
+          kubectl -n wisecow get pods -o wide
+          kubectl -n wisecow port-forward svc/wisecow 8080:80 &
+          sleep 5
+          python3 scripts/app_health_checker.py http://localhost:8080 --expect 200

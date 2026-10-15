@@ -1,0 +1,26 @@
+# TLS via cert-manager. For a public domain swap the self-signed issuer for Let's Encrypt (ACME HTTP-01).
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: wisecow-selfsigned
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: wisecow-tls
+  namespace: wisecow
+spec:
+  secretName: wisecow-tls
+  duration: 2160h    # 90 days
+  renewBefore: 360h  # 15 days
+  commonName: wisecow.local
+  dnsNames:
+    - wisecow.local
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: wisecow-selfsigned
+    kind: ClusterIssuer

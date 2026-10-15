@@ -1,0 +1,14 @@
+$ kubectl -n wisecow get all -o wide
+NAME                           READY   STATUS    RESTARTS   AGE     IP           NODE                    NOMINATED NODE   READINESS GATES
+pod/wisecow-56697d6f7f-qxzlr   1/1     Running   0          3m42s   10.244.0.6   wisecow-control-plane   <none>           <none>
+pod/wisecow-56697d6f7f-sgll5   1/1     Running   0          3m42s   10.244.0.5   wisecow-control-plane   <none>           <none>
+
+NAME                       TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE     SELECTOR
+service/wisecow            ClusterIP   10.96.176.142   <none>        80/TCP         3m42s   app=wisecow
+service/wisecow-nodeport   NodePort    10.96.217.24    <none>        80:30499/TCP   3m42s   app=wisecow
+
+NAME                      READY   UP-TO-DATE   AVAILABLE   AGE     CONTAINERS   IMAGES                                  SELECTOR
+deployment.apps/wisecow   2/2     2            2           3m42s   wisecow      ghcr.io/praneethrayalu/wisecow:latest   app=wisecow
+
+NAME                                 DESIRED   CURRENT   READY   AGE     CONTAINERS   IMAGES                                  SELECTOR
+replicaset.apps/wisecow-56697d6f7f   2         2         2       3m42s   wisecow      ghcr.io/praneethrayalu/wisecow:latest   app=wisecow,pod-template-hash=56697d6f7f

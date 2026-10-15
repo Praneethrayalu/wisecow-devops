@@ -1,0 +1,22 @@
+$ curl -vk --resolve wisecow.local:8443:127.0.0.1 https://wisecow.local:8443/
+* SSL connection using TLSv1.3 / TLS_AES_256_GCM_SHA384
+*  subject: CN=wisecow.local
+*  issuer: CN=wisecow.local
+* using HTTP/2
+> GET / HTTP/2
+< HTTP/2 200 
+<pre> _________________________________________
+\ Mark Twain                              /
+ -----------------------------------------
+        \   ^__^
+         \  (oo)\_______
+            (__)\       )\/\
+                ||----w |
+                ||     ||</pre>
+
+$ curl -sI --resolve wisecow.local:8080:127.0.0.1 http://wisecow.local:8080/  (HTTP -> HTTPS redirect)
+HTTP/1.1 308 Permanent Redirect
+Date: Thu, 15 Oct 2026 09:51:56 GMT
+Content-Type: text/html
+Content-Length: 164
+Connection: keep-alive

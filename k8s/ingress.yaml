@@ -1,0 +1,27 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: wisecow
+  namespace: wisecow
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    # cert-manager issues the certificate into the `wisecow-tls` secret (see k8s/tls/cert-manager.yaml).
+    cert-manager.io/cluster-issuer: wisecow-selfsigned
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - wisecow.local
+      secretName: wisecow-tls
+  rules:
+    - host: wisecow.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: wisecow
+                port:
+                  number: 80

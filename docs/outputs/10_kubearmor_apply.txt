@@ -1,0 +1,35 @@
+kubearmorpolicy.security.kubearmor.com/wisecow-zero-trust created
+namespace/wisecow configured
+NAME                 AGE
+wisecow-zero-trust   1s
+
+Found KubeArmor running in Kubernetes
+
+Daemonset :
+ 	kubearmor 	Desired: 1	Ready: 1	Available: 1	
+Deployments : 
+ 	kubearmor-controller	Desired: 1	Ready: 1	Available: 1	
+ 	kubearmor-operator  	Desired: 1	Ready: 1	Available: 1	
+ 	kubearmor-relay     	Desired: 1	Ready: 1	Available: 1	
+Containers : 
+ 	kubearmor-none-containerd-98c2c-bbvsf	Running: 1	Image Version: kubearmor/kubearmor:stable                 	
+ 	kubearmor-operator-6df7b7d765-qnsnj  	Running: 1	Image Version: kubearmor/kubearmor-operator:stable        	
+ 	kubearmor-relay-f7456f64c-vm6gk      	Running: 1	Image Version: kubearmor/kubearmor-relay-server:stable    	
+ 	kubearmor-snitch-n5pnq-9jqft         	Running: 1	Image Version: docker.io/kubearmor/kubearmor-snitch:stable	
+ 	kubearmor-controller-7f54db487-w7sxb 	Running: 1	Image Version: kubearmor/kubearmor-controller:stable      	
+Node 1 : 
+ 	OS Image:                 	Debian GNU/Linux 12 (bookworm)	
+ 	Kernel Version:           	6.1.158+                      	
+ 	Kubelet Version:          	v1.32.2                       	
+ 	Container Runtime:        	containerd://2.0.2            	
+ 	Active LSM:               	                              	
+ 	Host Security:            	false                         	
+ 	Container Security:       	false                         	
+ 	Container Default Posture:	audit(File)                   	audit(Capabilities)	audit(Network)	
+ 	Host Default Posture:     	audit(File)                   	audit(Capabilities)	audit(Network)	
+ 	Host Visibility:          	none                          	
+Armored Up pods : 
++-----------+-----------------+------------+------+--------+
+| NAMESPACE | DEFAULT POSTURE | VISIBILITY | NAME | POLICY |
++-----------+-----------------+------------+------+--------+
++-----------+-----------------+------------+------+--------+

@@ -1,0 +1,5 @@
+Removing intermediate container bcf7bd613ad0
+ ---> 90efad2750dc
+Successfully built 90efad2750dc
+Successfully tagged ghcr.io/praneethrayalu/wisecow:latest
+ghcr.io/praneethrayalu/wisecow:latest 133MB

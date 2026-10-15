@@ -1,0 +1,7 @@
+namespace/wisecow created
+deployment.apps/wisecow created
+service/wisecow created
+service/wisecow-nodeport created
+Waiting for deployment "wisecow" rollout to finish: 0 of 2 updated replicas are available...
+Waiting for deployment "wisecow" rollout to finish: 1 of 2 updated replicas are available...
+deployment "wisecow" successfully rolled out

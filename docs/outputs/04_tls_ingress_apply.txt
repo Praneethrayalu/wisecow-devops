@@ -1,0 +1,15 @@
+clusterissuer.cert-manager.io/wisecow-selfsigned created
+certificate.cert-manager.io/wisecow-tls created
+Error from server (InternalError): error when creating "k8s/ingress.yaml": Internal error occurred: failed calling webhook "validate.nginx.ingress.kubernetes.io": failed to call webhook: Post "https://ingress-nginx-controller-admission.ingress-nginx.svc:443/networking/v1/ingresses?timeout=10s": dial tcp 10.96.100.210:443: connect: connection refused
+Error from server (NotFound): certificates.cert-manager.io "wisecow-tls,ingress" not found
+Error from server (NotFound): secrets "wisecow-tls,ingress" not found
+ingress.networking.k8s.io/wisecow created
+$ kubectl -n wisecow get certificate,secret,ingress
+NAME                                      READY   SECRET        AGE
+certificate.cert-manager.io/wisecow-tls   True    wisecow-tls   44s
+
+NAME                 TYPE                DATA   AGE
+secret/wisecow-tls   kubernetes.io/tls   3      44s
+
+NAME                                CLASS   HOSTS           ADDRESS   PORTS     AGE
+ingress.networking.k8s.io/wisecow   nginx   wisecow.local             80, 443   8s

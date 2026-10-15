@@ -1,0 +1,6 @@
+.git
+.github
+k8s
+scripts
+docs
+*.md

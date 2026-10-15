@@ -1,0 +1,48 @@
+$ python3 scripts/log_analyzer.py docs/sample_access.log --top 5
+============================================================
+WEB SERVER LOG REPORT
+============================================================
+Total requests : 1200   (unparsed lines: 0)
+Bytes served   : 1,516,852
+404 errors     : 181
+
+Status codes:
+  200: 974
+  404: 181
+  500: 45
+
+Methods: GET=1200
+
+Top 5 requested pages:
+      591  /
+      170  /index.html
+      129  /api/wisdom
+       97  /about
+       67  /admin
+
+Top 5 pages returning 404:
+       64  /admin
+       61  /wp-login.php
+       56  /favicon.ico
+
+Top 5 client IPs:
+      482  203.0.113.77
+      292  203.0.113.5
+      202  198.51.100.23
+      108  192.0.2.44
+       59  10.244.0.1
+
+Top 5 user agents:
+      264  curl/7.88.1
+      259  Mozilla/5.0 (X11; Linux x86_64) Chrome/130
+      239  python-requests/2.32
+      221  Mozilla/5.0 (iPhone; CPU iPhone OS 17_0) Safari
+      217  Googlebot/2.1
+
+Requests per hour:
+  15/Oct/2026:08  200
+  15/Oct/2026:09  200
+  15/Oct/2026:10  200
+  15/Oct/2026:11  200
+  15/Oct/2026:12  200
+  15/Oct/2026:13  200

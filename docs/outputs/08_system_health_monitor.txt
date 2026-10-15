@@ -1,0 +1,22 @@
+$ ./scripts/system_health_monitor.sh -l /tmp/system_health.log
+[2026-10-15 09:52:16] cpu=4% mem=45% disk(/)=53% procs=211  load=0.21 0.47 0.54
+[2026-10-15 09:52:16] OK - all metrics within thresholds
+exit code: 0
+
+$ ./scripts/system_health_monitor.sh -c 5 -m 10 -p 50 -l /tmp/system_health.log   # low thresholds to force alerts
+[2026-10-15 09:52:17] cpu=2% mem=45% disk(/)=53% procs=211  load=0.21 0.47 0.54
+[2026-10-15 09:52:17] ALERT Memory usage 45% > 10%
+[2026-10-15 09:52:17] ALERT Running processes 211 > 50
+Top CPU consumers:
+    PID COMMAND         %CPU %MEM
+ 614694 kube-apiserver   5.4  3.8
+ 593934 python           5.3 14.1
+ 613368 dockerd          4.4  1.0
+ 614099 containerd       3.0  1.0
+ 614771 etcd             2.8  0.7
+exit code: 1
+
+$ tail -3 /tmp/system_health.log
+ 613368 dockerd          4.4  1.0
+ 614099 containerd       3.0  1.0
+ 614771 etcd             2.8  0.7

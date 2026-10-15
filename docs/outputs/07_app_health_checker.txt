@@ -1,0 +1,7 @@
+$ python3 scripts/app_health_checker.py http://localhost:8081 https://wisecow.local:8443/ http://localhost:9999 --insecure --retries 2 --log /tmp/app_health.log
+2026-10-15 09:52:48,577 INFO UP   http://localhost:8081  HTTP 200  1025.8 ms
+2026-10-15 09:52:48,605 INFO UP   https://wisecow.local:8443/  HTTP 200  27.5 ms
+2026-10-15 09:52:51,609 ERROR DOWN http://localhost:9999  connection error: [Errno 111] Connection refused  (attempt 2)
+exit code: 1
+$ python3 scripts/app_health_checker.py http://localhost:8081 --json --retries 1 --log /tmp/app_health.log
+{"url": "http://localhost:8081", "checked_at": "2026-10-15T09:52:51+00:00", "status_code": 200, "latency_ms": 1068.5, "body_bytes": 3083, "state": "UP", "reason": "HTTP 200", "attempt": 1}
