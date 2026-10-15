@@ -1,6 +1,15 @@
-# Problem Statement 3 (optional): zero-trust KubeArmor runtime policy for the wisecow workload.
-# Default-deny posture: only the processes wisecow genuinely needs may execute, sensitive paths are
-# read-only or blocked, and only the app's own TCP port may be served. Everything else is Blocked + audited.
+# Problem Statement 3 (optional): zero-trust KubeArmor policy for the wisecow pods.
+#
+# Zero trust here means an ALLOW-LIST: the policy names the only processes, files and network
+# protocols wisecow needs. Together with the namespace posture in namespace-default-posture.yaml
+# (default "block"), anything not listed is denied and logged.
+#
+# STATUS: syntax validated against the KubeArmor CRD (kubectl apply --dry-run=server) and applied
+# to a kind cluster. ENFORCEMENT IS UNVERIFIED: the test machine's kernel had neither BPF-LSM nor
+# AppArmor, so KubeArmor ran in visibility-only mode and could not block anything. Verify on a node
+# with BPF-LSM/AppArmor (see README "KubeArmor") before claiming it blocks.
+#
+# Debian 12 uses merged /usr (/bin -> /usr/bin); both spellings are listed to be safe.
 apiVersion: security.kubearmor.com/v1
 kind: KubeArmorPolicy
 metadata:
@@ -8,61 +17,32 @@ metadata:
   namespace: wisecow
 spec:
   severity: 7
-  tags: ["zero-trust", "wisecow", "accuknox"]
-  message: "wisecow zero-trust policy violation"
+  tags: ["zero-trust", "wisecow"]
+  message: "wisecow zero-trust policy: activity outside the allow-list"
   selector:
     matchLabels:
       app: wisecow
+  action: Allow
   process:
     matchPaths:
-      # allow-list of binaries the wisecow.sh pipeline needs
-      - path: /bin/bash
+      - path: /app/wisecow.sh        # entrypoint and per-connection handler
       - path: /usr/bin/bash
-      - path: /bin/sh
-      - path: /usr/bin/sh
-      - path: /usr/bin/nc.openbsd
-      - path: /bin/nc.openbsd
+      - path: /bin/bash
+      - path: /usr/bin/socat         # TCP listener (forks one handler per connection)
       - path: /usr/games/fortune
       - path: /usr/games/cowsay
-      - path: /usr/bin/perl           # cowsay is a perl script
-      - path: /usr/bin/cat
-      - path: /bin/cat
-      - path: /usr/bin/rm
-      - path: /bin/rm
-      - path: /usr/bin/mkfifo
-      - path: /bin/mkfifo
-      - path: /usr/bin/sleep
-      - path: /bin/sleep
-      - path: /usr/bin/grep
-      - path: /bin/grep
-      - path: /usr/bin/printf
-      - path: /app/wisecow.sh
-    matchDirectories:
-      # explicitly block interactive/debug and package tooling from ever running inside the pod
-      - dir: /usr/bin/
-        recursive: true
-        action: Block
-      - dir: /usr/sbin/
-        recursive: true
-        action: Block
-      - dir: /usr/local/bin/
-        recursive: true
-        action: Block
+      - path: /usr/bin/perl          # cowsay is a perl script
+      - path: /usr/bin/date          # access-log timestamps
+      - path: /usr/bin/realpath      # resolves the handler path at start-up
   file:
-    matchPaths:
-      - path: /etc/passwd
-        readOnly: true
-      - path: /etc/shadow
-        action: Block
-      - path: /etc/hosts
-        readOnly: true
     matchDirectories:
       - dir: /app/
-        recursive: true           # fifo "response" lives here; read-write needed
-      - dir: /usr/share/games/
         recursive: true
-        readOnly: true            # fortune database + cowsay cows
-      - dir: /usr/share/
+        readOnly: true
+      - dir: /usr/
+        recursive: true
+        readOnly: true               # binaries, shared libraries, perl modules, fortune data, cows
+      - dir: /lib/
         recursive: true
         readOnly: true
       - dir: /etc/
@@ -72,22 +52,10 @@ spec:
         recursive: true
         readOnly: true
       - dir: /tmp/
-        recursive: true
-        action: Block             # app never needs /tmp; blocks drop-and-run tooling
-      - dir: /var/run/secrets/
-        recursive: true
-        action: Block             # no access to the service-account token
-      - dir: /root/
-        recursive: true
-        action: Block
+        recursive: true              # emptyDir scratch space (normally unused)
+    matchPaths:
+      - path: /dev/null
+      - path: /dev/urandom           # fortune picks a random quote
   network:
     matchProtocols:
-      - protocol: tcp             # served by nc on 4499
-    # raw/udp/icmp are not needed; everything not matched becomes Block via the default posture
-  capabilities:
-    matchCapabilities:
-      - capability: net_raw
-        action: Block
-      - capability: sys_admin
-        action: Block
-  action: Allow
+      - protocol: tcp                # serving HTTP on 4499; no UDP/DNS or raw sockets needed

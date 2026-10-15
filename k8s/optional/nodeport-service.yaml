@@ -1,0 +1,19 @@
+# OPTIONAL, for local debugging only (not part of kustomization.yaml, so CI never deploys it).
+# NodePort opens port 30499 on every node and serves plain HTTP, bypassing the Ingress and its TLS.
+# Use it on kind/minikube when no ingress controller is installed:  kubectl apply -f k8s/optional/
+apiVersion: v1
+kind: Service
+metadata:
+  name: wisecow-nodeport
+  namespace: wisecow
+  labels:
+    app: wisecow
+spec:
+  type: NodePort
+  selector:
+    app: wisecow
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      nodePort: 30499

@@ -1,8 +1,12 @@
-# Turn the Allow-list above into a true default-deny: everything the policy doesn't allow is blocked.
+# Default posture for the wisecow namespace: whatever the allow-list policy does not permit is
+# BLOCKED (not just audited). Apply together with wisecow-zero-trust-policy.yaml.
+# Enforcement needs a node kernel with BPF-LSM or AppArmor (see the policy file's STATUS note).
 apiVersion: v1
 kind: Namespace
 metadata:
   name: wisecow
+  labels:
+    app.kubernetes.io/name: wisecow
   annotations:
     kubearmor-file-posture: block
     kubearmor-network-posture: block

@@ -1,6 +1,9 @@
 .git
 .github
 k8s
+kubearmor
 scripts
+tests
 docs
 *.md
+LICENSE

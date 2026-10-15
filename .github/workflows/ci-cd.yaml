@@ -1,121 +1,183 @@
-name: CI/CD - build, push and deploy wisecow
+name: CI/CD - test, build, push and deploy wisecow
+
+# Pipeline (each job only runs if the jobs it "needs" succeeded):
+#   lint  ->  image-test  ->  push (main only)  ->  deploy (main only, and only when enabled)
+# Pull requests run lint + image-test; nothing is pushed or deployed for a PR.
 
 on:
   push:
-    branches: [ main ]
-    paths-ignore: [ "docs/**", "**.md" ]
+    branches: [main]
+    paths-ignore: ["docs/**", "**.md"]
   pull_request:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
 
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository_owner }}/wisecow
-
 permissions:
-  contents: read
-  packages: write
+  contents: read            # least privilege by default; jobs widen it only where needed
+
+env:
+  IMAGE_REPO: ghcr.io/${{ github.repository_owner }}/wisecow
+  KUBECONFORM_VERSION: v0.6.7
 
 jobs:
-  lint-and-test:
-    name: Lint and smoke test
+  lint:
+    name: Lint and validate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: ShellCheck the app and scripts
-        uses: ludeeus/action-shellcheck@2.0.0
-        with:
-          scandir: "."
-          severity: warning
-      - name: Validate Kubernetes manifests
-        run: |
-          curl -sSL https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz | tar xz
-          ./kubeconform -strict -ignore-missing-schemas -summary k8s/*.yaml
-      - name: Python syntax check for scripts
-        run: python3 -m py_compile scripts/*.py
 
-  build-and-push:
-    name: Build and push image
-    needs: lint-and-test
+      - name: ShellCheck (app, scripts, tests)
+        run: shellcheck --severity=warning wisecow.sh scripts/*.sh tests/*.sh k8s/tls/*.sh
+
+      - name: Python syntax check
+        run: python3 -m py_compile scripts/*.py tests/*.py
+
+      - name: Unit tests for the ops scripts
+        run: |
+          python3 -m pip install --quiet pytest==8.3.3
+          python3 -m pytest -q tests/test_scripts.py
+
+      - name: Validate every Kubernetes manifest (app, TLS, optional, KubeArmor)
+        run: |
+          curl -sSfL "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" | tar xz kubeconform
+          CRDS='https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json'
+          LOCAL='k8s/schemas/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json'   # KubeArmorPolicy schema (from its CRD)
+          kubectl kustomize k8s | ./kubeconform -strict -summary -
+          ./kubeconform -strict -summary -schema-location default -schema-location "$CRDS" -schema-location "$LOCAL" \
+            k8s/tls/*.yaml k8s/optional/*.yaml kubearmor/*.yaml
+
+  image-test:
+    name: Build image and test it
+    needs: lint
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the image (not pushed yet)
+        run: docker build -t wisecow:ci .
+
+      - name: Run it the way Kubernetes will (non-root, read-only, no capabilities)
+        run: |
+          docker run -d --name wisecow --read-only --cap-drop ALL --security-opt no-new-privileges \
+            -p 4499:4499 wisecow:ci
+          for _ in $(seq 30); do
+            [ "$(docker inspect -f '{{.State.Health.Status}}' wisecow)" = healthy ] && break
+            sleep 1
+          done
+          docker inspect -f 'health={{.State.Health.Status}} user={{.Config.User}}' wisecow
+          [ "$(docker inspect -f '{{.State.Health.Status}}' wisecow)" = healthy ]
+
+      - name: Smoke test against the built image
+        run: tests/smoke_test.sh http://127.0.0.1:4499
+
+      - name: Container logs (always, for debugging)
+        if: always()
+        run: docker logs wisecow 2>&1 | tail -n 50; docker rm -f wisecow || true
+
+      - name: Save the tested image so the push job publishes exactly these bytes
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        run: docker save wisecow:ci | gzip > wisecow-image.tar.gz
+
+      - uses: actions/upload-artifact@v4
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        with:
+          name: wisecow-image
+          path: wisecow-image.tar.gz
+          retention-days: 1
+
+  push:
+    name: Push image to GHCR
+    needs: image-test
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write       # only this job may write to the registry
     outputs:
-      image: ${{ steps.meta.outputs.tags }}
+      image: ${{ steps.build.outputs.image }}
       digest: ${{ steps.build.outputs.digest }}
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GHCR
-        if: github.event_name != 'pull_request'
-        uses: docker/login-action@v3
+      - uses: actions/download-artifact@v4
         with:
-          registry: ${{ env.REGISTRY }}
+          name: wisecow-image
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: "Image metadata (tags: sha, latest)"
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=sha,prefix=sha-,format=short
-            type=raw,value=latest,enable={{is_default_branch}}
-
-      - name: Build (and push on main)
+      - name: Push the tested image (tags sha-<commit> and latest) and record its digest
         id: build
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Smoke test the built image
-        if: github.event_name == 'pull_request'
         run: |
-          docker build -t wisecow:test .
-          docker run -d --name wisecow -p 4499:4499 wisecow:test
-          sleep 3
-          curl -sf http://localhost:4499 | grep -q '<pre>' && echo "wisecow answered with a cow"
-          docker rm -f wisecow
+          image="${IMAGE_REPO,,}"                       # GHCR needs a lower-case name
+          gunzip -c wisecow-image.tar.gz | docker load
+          docker tag wisecow:ci "$image:sha-$GITHUB_SHA"
+          docker tag wisecow:ci "$image:latest"
+          docker push "$image:sha-$GITHUB_SHA"
+          docker push "$image:latest"
+          digest="$(docker inspect --format '{{index .RepoDigests 0}}' "$image:sha-$GITHUB_SHA" | cut -d@ -f2)"
+          echo "image=$image" >> "$GITHUB_OUTPUT"
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+          echo "Pushed $image@$digest" >> "$GITHUB_STEP_SUMMARY"
 
   deploy:
-    name: Continuous deployment to Kubernetes
-    needs: build-and-push
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    name: Deploy to Kubernetes
+    needs: push
+    # Opt-in: set the repository VARIABLE DEPLOY_ENABLED=true once a cluster and the KUBE_CONFIG secret
+    # exist. Without it this job shows as "skipped" (never as a fake success).
+    if: vars.DEPLOY_ENABLED == 'true'
     runs-on: ubuntu-latest
     environment: production
+    concurrency: production-deploy
+    env:
+      KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+      DEPLOY_IMAGE: ${{ needs.push.outputs.image }}@${{ needs.push.outputs.digest }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install kubectl
-        uses: azure/setup-kubectl@v4
-
-      - name: Configure kubeconfig from secret
-        # KUBE_CONFIG = base64 of a kubeconfig for a service account limited to the wisecow namespace
+      - name: Check required secrets and inputs
         run: |
-          mkdir -p ~/.kube
-          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
-          chmod 600 ~/.kube/config
-          kubectl cluster-info
+          if [ -z "$KUBE_CONFIG" ]; then
+            echo "::error title=Missing secret::KUBE_CONFIG is not set. Add a base64-encoded kubeconfig (scoped to the wisecow namespace) under Settings > Secrets and variables > Actions, or unset DEPLOY_ENABLED."
+            exit 1
+          fi
+          case "$DEPLOY_IMAGE" in
+            *@sha256:*) echo "Deploying immutable image $DEPLOY_IMAGE" ;;
+            *) echo "::error::push job produced no image digest ($DEPLOY_IMAGE)"; exit 1 ;;
+          esac
 
-      - name: Deploy the freshly built image
+      - uses: azure/setup-kubectl@v4
+
+      - name: Write kubeconfig (from secret, never echoed)
         run: |
-          IMAGE="$(echo '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}' | tr '[:upper:]' '[:lower:]')@${{ needs.build-and-push.outputs.digest }}"
-          kubectl apply -f k8s/namespace.yaml
-          kubectl apply -f k8s/service.yaml -f k8s/ingress.yaml
-          kubectl apply -f k8s/deployment.yaml
-          kubectl -n wisecow set image deployment/wisecow wisecow="$IMAGE"
-          kubectl -n wisecow rollout status deployment/wisecow --timeout=180s
+          install -m 600 /dev/null "$RUNNER_TEMP/kubeconfig"
+          printf '%s' "$KUBE_CONFIG" | base64 -d > "$RUNNER_TEMP/kubeconfig"
+          echo "KUBECONFIG=$RUNNER_TEMP/kubeconfig" >> "$GITHUB_ENV"
 
-      - name: Post-deploy health check
+      - name: Check cluster access
+        run: kubectl version && kubectl auth can-i patch deployments -n wisecow
+
+      - name: Apply manifests and roll out the new digest
+        run: |
+          kubectl apply -k k8s
+          kubectl -n wisecow set image deployment/wisecow wisecow="$DEPLOY_IMAGE"
+          if ! kubectl -n wisecow rollout status deployment/wisecow --timeout=180s; then
+            echo "::error::rollout did not finish in 180 s - rolling back to the previous version"
+            kubectl -n wisecow describe deployment wisecow | tail -n 30
+            kubectl -n wisecow rollout undo deployment/wisecow
+            exit 1
+          fi
+
+      - name: Verify the deployed app answers
         run: |
           kubectl -n wisecow get pods -o wide
-          kubectl -n wisecow port-forward svc/wisecow 8080:80 &
-          sleep 5
-          python3 scripts/app_health_checker.py http://localhost:8080 --expect 200
+          kubectl -n wisecow port-forward svc/wisecow 8080:80 >/tmp/port-forward.log 2>&1 &
+          PF=$!
+          trap 'kill $PF' EXIT
+          python3 scripts/app_health_checker.py http://127.0.0.1:8080/ --retries 10 --backoff 1 --timeout 5
+          tests/smoke_test.sh http://127.0.0.1:8080
+
+      - name: Summary
+        if: success()
+        run: echo "Deployed \`$DEPLOY_IMAGE\` to namespace wisecow and verified it answers HTTP 200." >> "$GITHUB_STEP_SUMMARY"
